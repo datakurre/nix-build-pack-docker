@@ -1,5 +1,5 @@
 FROM debian:wheezy
-RUN apt-get update && apt-get install -y curl bzip2 adduser
+RUN apt-get update && apt-get install -y curl bzip2 adduser graphviz
 RUN adduser --disabled-password --gecos '' user
 RUN mkdir -m 0755 /nix && chown user /nix
 USER user
