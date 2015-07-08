@@ -25,11 +25,3 @@ README
    .. code:: bash
 
       $ docker run --rm -v `pwd`:/opt/ -P pyramid /opt/hello_world.py
-
-TODO
-====
-
-- Can a docker image be created directly from the tarball? (Even without
-  the current BusyBox base image...)
-
-- Can tarballed Nix-dependencies optimized better? (Why Python requires GCC?)
