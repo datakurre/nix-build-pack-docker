@@ -24,7 +24,7 @@ Example
 
    .. code:: bash
 
-      $ docker run --rm -v `pwd`:/opt/ nix-build-pack /opt/pyramid.nix
+      $ docker run --rm -v `pwd`:/opt nix-build-pack /opt/pyramid.nix
 
 3. Build the target Docker image from scratch using the created tarball
 
@@ -36,7 +36,7 @@ Example
 
    .. code:: bash
 
-      $ docker run --rm -v `pwd`:/opt/ -P pyramid /opt/hello_world.py
+      $ docker run --rm -v `pwd`:/opt -P pyramid /opt/hello_world.py
 
 
 Explained
