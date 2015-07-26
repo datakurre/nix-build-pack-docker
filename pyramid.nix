@@ -1,6 +1,6 @@
 with import <nixpkgs> {};
 
-python34.buildEnv.override {
-  extraLibs = [ pkgs.python34Packages.pyramid ];
+python.buildEnv.override {
+  extraLibs = [ pkgs.pythonPackages.pyramid ];
   ignoreCollisions = true;
 }
