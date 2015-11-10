@@ -42,6 +42,6 @@ clean:
 	$(IF_STORE) $(DOCKER) rm --volumes=true $(DATA_CONTAINER) || true
 	$(IF_BUILDER) $(DOCKER) rmi --force=true $(BUILDER_CONTAINER) || true
 	$(IF_IMAGE) $(DOCKER) rmi --force=true $(IMAGE) || true
-	@rm -f $(MAKE_IMAGE) $(MAKE_BUILDER)
+	@rm -f $(EXPRESSION).tar.gz $(MAKE_IMAGE) $(MAKE_BUILDER)
 
 .PHONY: run image builder clean
