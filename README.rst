@@ -19,7 +19,7 @@ Try it
    $ cd nix-build-pack-docker
    $ make
 
-Then use ``docker ps`` (and ``docker-machine ip default`` on OSX) to
+Then use ``docker ps`` (and ``docker-machine ip default`` on mac) to
 figure out, where the example Pyramid service is running.
 
 
