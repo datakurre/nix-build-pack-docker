@@ -1,91 +1,122 @@
 Nix to Docker buildpack
 =======================
 
-For creating Docker containers from scratch using Nix package manager.
+For creating Docker containers from scratch using Nix_ package manager.
 
-For more information about Nix, please, read `Domen's introduction to Nix
-package manager`__.
+Please, read `Domen's introduction to Nix package manager`__, for more
+information about Nix.
 
+.. _Nix: https://nixos.org/nix/
 __ https://www.domenkozar.com/2014/01/02/getting-started-with-nix-package-manager/
 
 
-Example
--------
-
-1. Build the builder Docker image
-
-   .. code:: bash
-
-      $ cd builder
-      $ docker build -t nix-build-pack --rm=true --force-rm=true --no-cache=true .
-      $ cd ..
-
-2. Run the builder container to extract tarball for your Nix expression
-
-   .. code:: bash
-
-      $ docker run --rm -v `pwd`:/opt nix-build-pack /opt/pyramid.nix
-
-3. Build the target Docker image from scratch using the created tarball
-
-   .. code:: bash
-
-      $ docker build -t pyramid --rm=true --force-rm=true --no-cache=true .
-
-4. Run container from the created image as usual
-
-   .. code:: bash
-
-      $ docker run --rm -v `pwd`:/opt -P pyramid /opt/hello_world.py
-
-
-Explained
----------
-
-``./builder/nix-build-pack.sh`` is a simple bash script to use Nix package
-manager to 1) update its package repository, 2) build the given expression with
-symlinked result directory, 3) make a nice dependency graph out of it, and 4)
-dump built closure containing all dependencies for the built app into a
-tarball.
+Try it
+------
 
 .. code:: bash
 
-   #!/bin/bash
-   source ~/.nix-profile/etc/profile.d/nix.sh
-   nix-channel --update
-   nix-build $1 -o app
-   nix-store -q app --graph | dot -Tpng > $1.png
-   tar cvz `nix-store -qR app` app > $1.tar.gz
+   $ git clone https://github.com/datakurre/nix-build-pack-docker
+   $ cd nix-build-pack-docker
+   $ make
 
-The resulting tarball will contain only two root directories: ``/nix`` and
-``/app``.
+Then use ``docker ps`` (and ``docker-machine ip default`` on OSX) to
+figure out, where the example Pyramid service is running.
 
-``./builder/Dockerfile`` is a simple example Dockerfile based on some
-Nix-capable base image to be used as a builder container for creating
-Nix-closure tarballs for the target images. It 1) installs Nix package manager,
-and 2) adds the previous builder script as the entrypoint for the image.
+
+Step by step
+------------
+
+At first, create a generic Nix-builder image and name it
+*nix-builder*:
+
+.. code:: bash
+
+    $ docker build -t nix-builder -f nix-builder.docker --rm=true --force-rm=true --no-cache=true .
+
+The builder is made of simple single-user Nix installation on top of some
+trusted Linux distribution, like debian:
+
+.. code:: Dockerfile
+
+    FROM debian:jessie
+    RUN apt-get update && apt-get install -y curl bzip2 adduser graphviz
+    RUN adduser --disabled-password --gecos '' user
+    RUN mkdir -m 0755 /nix && chown user /nix
+    USER user
+    ENV USER user
+    WORKDIR /home/user
+    RUN curl https://nixos.org/nix/install | sh
+    VOLUME /nix
+    COPY nix-builder.sh /home/user/
+    ENTRYPOINT ["/home/user/nix-builder.sh"]
+
+The image contains a mount point at ``/nix`` to support shared persistent
+Nix-store as a data container for any amount of builder containers.
+
+The entrypoint is a simple script to build a Nix expression and
+
+* add ``/tmp``, because that's usually required in images
+* move ``bin`` directory from build results into root
+* move other build result directories into ``/usr/local``.
+
+.. code:: bash
+
+    #!/bin/bash
+    source ~/.nix-profile/etc/profile.d/nix.sh
+    mkdir tmp
+    nix-channel --update
+    nix-build $1
+    nix-store -q result --graph | dot -Tpng > $1.png
+    tar cvz --transform="s|^result/bin|bin|" \
+            --transform="s|^result|usr/local|" \
+            tmp `nix-store -qR result` result/* > $1.tar.gz
+
+These build conventions work for me, but the script should be trivial
+enough to customize.
+
+Once the builder is build, a data container to persist Nix-store between
+builds (and allow parallel builds with shared store) is created with:
+
+.. code:: bash
+
+    $ docker create --name nix-store nix-builder
+
+Now you can run the builder for your expression with:
+
+.. code:: bash
+
+    $ docker run --rm --columes-from=nix-store -v `pwd`:/mnt nix-builder /mnt/pyramid.nix
+
+The example ``pyramid.nix`` expression simply defines a Python environment
+with pyramid-package:
+
+.. code:: nix
+
+    with import <nixpkgs> {};
+
+    python.buildEnv.override {
+      extraLibs = [ pkgs.pythonPackages.pyramid ];
+      ignoreCollisions = true;
+    }
+
+The builder creates a tarball, which could be used in ``./Dockerfile`` to
+populate an image from scratch:
+
+.. code:: Dockerfile
+
+    FROM scratch
+    ADD pyramid.nix.tar.gz /
+    EXPOSE 8080
+    ENTRYPOINT ["/bin/python"]
+
+with a normal docker build command:
 
 .. code::
 
-   FROM debian:wheezy
-   RUN apt-get update && apt-get install -y curl bzip2 adduser graphviz
-   RUN adduser --disabled-password --gecos '' user
-   RUN mkdir -m 0755 /nix && chown user /nix
-   USER user
-   ENV USER user
-   WORKDIR /home/user
-   RUN curl https://nixos.org/nix/install | sh
-   COPY nix-build-pack.sh /home/user/
-   ENTRYPOINT ["/home/user/nix-build-pack.sh"]
+    $ docker build -t pyramid --rm=true --force-rm=true --no-cache=true .
 
-``./Dockerfile`` is an example Dockerfile for building the actual target
-image from the resulting Nix-closure tarball. Remember to update ADD to add
-your tarball (named after the original Nix expression filename), add
-necessary EXPOSE, ENV and USER metadata, and update ENTRYPOINT.
+Finally, the resulting Docker image can be used to Run containers as usual:
 
-.. code::
+.. code:: bash
 
-   FROM scratch
-   ADD pyramid.nix.tar.gz /
-   EXPOSE 8080
-   ENTRYPOINT ["/app/bin/python3"]
+    $ docker run --rm -v `pwd`:/mnt -P pyramid /mnt/hello_world.py

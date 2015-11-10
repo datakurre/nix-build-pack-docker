@@ -1,0 +1,6 @@
+*.ipynb
+*.png
+*.tar.gz
+.ipynb_checkpoints
+.jupyter
+.sentinel.*
