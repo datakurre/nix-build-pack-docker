@@ -85,7 +85,7 @@ Now you can run the builder for your expression with:
 
 .. code:: bash
 
-    $ docker run --rm --columes-from=nix-store -v `pwd`:/mnt nix-builder /mnt/pyramid.nix
+    $ docker run --rm --volumes-from=nix-store -v $PWD:/mnt nix-builder /mnt/pyramid.nix
 
 The example ``pyramid.nix`` expression simply defines a Python environment
 with pyramid-package:
@@ -119,4 +119,4 @@ Finally, the resulting Docker image can be used to Run containers as usual:
 
 .. code:: bash
 
-    $ docker run --rm -v `pwd`:/mnt -P pyramid /mnt/hello_world.py
+    $ docker run --rm -v $PWD:/mnt -w /mnt -P pyramid hello_world.py
