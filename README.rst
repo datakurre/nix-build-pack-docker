@@ -55,9 +55,9 @@ Nix-store as a data container for any amount of builder containers.
 
 The entrypoint is a simple script to build a Nix expression and
 
+* create dependency graph for the build results
 * add ``/tmp``, because that's usually required in images
-* move ``bin`` directory from build results into root
-* move other build result directories into ``/usr/local``.
+* move build results into container root (into ``/bin`` etc)
 
 .. code:: bash
 
@@ -66,10 +66,9 @@ The entrypoint is a simple script to build a Nix expression and
     mkdir tmp
     nix-channel --update
     nix-build $1
+    if [ -h result/etc ]; then echo Error: Build resulted /etc as symlink && exit 1; fi
     nix-store -q result --graph | sed 's/#ff0000/#ffffff/' | dot -Nstyle=bold -Tpng > $1.png
-    tar cvz --transform="s|^result/bin|bin|" \
-            --transform="s|^result|usr/local|" \
-            tmp `nix-store -qR result` result/* > $1.tar.gz
+    tar cvz --transform="s|^result/||" tmp `nix-store -qR result` result/* > $1.tar.gz
 
 These build conventions work for me, but the script should be trivial
 enough to customize.
