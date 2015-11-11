@@ -73,12 +73,10 @@ The entrypoint is a simple script to build a Nix expression and
 These build conventions work for me, but the script should be trivial
 enough to customize.
 
-.. note::
-
-   If the Nix expression results ``./result/etc``-directory as a symlink
-   (happens when only a single buildInput has ``./etc``) an error is raised and
-   nothing is created (Docker creates an implict ``/etc``, which cannot be
-   populated from a tarball with ``/etc`` as symlink).
+**Note:** If the Nix expression results ``./result/etc``-directory as a symlink
+(happens when only a single buildInput has ``./etc``) an error is raised and
+nothing is created (Docker creates an implict ``/etc``, which cannot be
+populated from a tarball with ``/etc`` as symlink).
 
 Once the builder is build, a data container to persist Nix-store between
 builds (and allow parallel builds with shared store) is created with:
