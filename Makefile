@@ -39,9 +39,11 @@ $(MAKE_BUILDER): nix-builder.docker nix-builder.sh
 	@touch $(MAKE_BUILDER)
 
 clean:
-	$(IF_STORE) $(DOCKER) rm --volumes=true $(DATA_CONTAINER) || true
-	$(IF_BUILDER) $(DOCKER) rmi --force=true $(BUILDER_CONTAINER) || true
 	$(IF_IMAGE) $(DOCKER) rmi --force=true $(IMAGE) || true
 	@rm -f $(EXPRESSION).tar.gz $(MAKE_IMAGE) $(MAKE_BUILDER)
+
+purge: clean
+	$(IF_STORE) $(DOCKER) rm --volumes=true $(DATA_CONTAINER) || true
+	$(IF_BUILDER) $(DOCKER) rmi --force=true $(BUILDER_CONTAINER) || true
 
 .PHONY: run image builder clean
